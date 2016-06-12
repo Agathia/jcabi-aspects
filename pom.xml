@@ -35,11 +35,11 @@
     <parent>
         <groupId>com.jcabi</groupId>
         <artifactId>jcabi</artifactId>
-        <version>1.16</version>
+        <version>1.21</version>
     </parent>
     <artifactId>jcabi-aspects</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
     <name>jcabi-aspects</name>
     <description>Collection of convenient and useful Java annotations</description>
     <issueManagement>
@@ -66,7 +66,7 @@
             <groupId>com.jcabi</groupId>
             <artifactId>jcabi-log</artifactId>
             <!-- version is set in order to avoid a cyclic reference -->
-            <version>0.15</version>
+            <version>0.17</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.jcabi</groupId>
@@ -78,7 +78,7 @@
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjrt</artifactId>
             <scope>compile</scope>
-            <version>1.8.4</version>
+            <version>1.8.7</version>
         </dependency>
         <dependency>
             <groupId>javax.validation</groupId>
@@ -88,24 +88,23 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>5.0.0.Final</version>
+            <version>5.3.0.Alpha1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.el</groupId>
+            <artifactId>javax.el-api</artifactId>
+            <version>3.0.1-b04</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>javax.el</artifactId>
+            <version>2.2.6</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
-        <!-- Comment this line if you don't see source code in your IDE -->
-        <sourceDirectory>${project.build.directory}/filtered-sources/java</sourceDirectory>
-        <resources>
-            <resource>
-                <directory>${basedir}/src/main/java</directory>
-                <filtering>true</filtering>
-                <targetPath>${project.build.directory}/filtered-sources/java</targetPath>
-            </resource>
-            <resource>
-                <directory>${basedir}/src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -129,7 +128,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.7</version>
+                <version>1.8</version>
                 <configuration>
                     <complianceLevel>1.6</complianceLevel>
                     <source>1.6</source>
@@ -155,6 +154,30 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>templating-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <executions>
+                    <execution>
+                        <id>default-cli</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>filter-sources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <sourceDirectory>${basedir}/src/main/java-templates</sourceDirectory>
+                    <outputDirectory>${project.build.directory}/generated-sources/java-templates/</outputDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>3.0.0</version>
+                <extensions>true</extensions>
+            </plugin>
         </plugins>
     </build>
     <profiles>
@@ -166,7 +189,7 @@
                         <groupId>com.qulice</groupId>
                         <artifactId>qulice-maven-plugin</artifactId>
                         <configuration>
-                            <excludes>
+                            <excludes combine.children="append">
                                 <exclude>checkstyle:/src/it/.*</exclude>
                                 <exclude>checkstyle:/src/site/apt/.*</exclude>
                                 <exclude>pmd:/src/it/.*</exclude>
@@ -179,6 +202,51 @@
                                 <exclude>xml:\\src\\it\\settings.xml</exclude>
                             </excludes>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>coveralls</id>
+            <!-- It doesn't work because cobertura is disabled, see above -->
+            <!--
+            <activation>
+                <file><exists>pom.xml</exists></file>
+            </activation>
+            -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>cobertura-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>site</phase>
+                                <goals>
+                                    <goal>cobertura</goal>
+                                </goals>
+                                <configuration>
+                                    <format>xml</format>
+                                    <maxmem>256m</maxmem>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.eluder.coveralls</groupId>
+                        <artifactId>coveralls-maven-plugin</artifactId>
+                        <version>4.1.0</version>
+                        <executions>
+                            <execution>
+                                <phase>site</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                                <configuration>
+                                    <repoToken>${coveralls.token.aspects}</repoToken>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

@@ -27,55 +27,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.jcabi.aspects.aj;
+package com.jcabi.aspects.version;
 
-import com.jcabi.aspects.Immutable;
-import com.jcabi.log.Logger;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Test;
 
 /**
- * Logs all exceptions thrown out of a method.
- *
- * @author Yegor Bugayenko (yegor@tpc2.com)
+ * Unit tests for {@link Version}.
+ * @author Georgy Vlasov (wlasowegor@gmail.com)
  * @version $Id$
- * @since 0.1.10
- * @see com.jcabi.aspects.LogExceptions
- * @checkstyle IllegalThrows (500 lines)
+ * @since 0.23
  */
-@Aspect
-@Immutable
-public final class ExceptionsLogger {
+public final class VersionTest {
 
     /**
-     * Catch exception and log it.
-     *
-     * <p>Try NOT to change the signature of this method, in order to keep
-     * it backward compatible.
-     *
-     * @param point Joint point
-     * @return The result of call
-     * @throws Throwable If something goes wrong inside
+     * Version.CURRENT can contain actual project version and not a
+     * "${project.version}" placeholder.
+     * @throws Exception If fails
      */
-    @Around
-        (
-            // @checkstyle StringLiteralsConcatenation (2 lines)
-            "execution(* * (..))"
-            + " && @annotation(com.jcabi.aspects.LogExceptions)"
-        )
-    @SuppressWarnings("PMD.AvoidCatchingThrowable")
-    public Object wrap(final ProceedingJoinPoint point) throws Throwable {
-        try {
-            return point.proceed();
-        // @checkstyle IllegalCatch (1 line)
-        } catch (final Throwable ex) {
-            Logger.warn(
-                new ImprovedJoinPoint(point).targetize(),
-                "%[exception]s",
-                ex
-            );
-            throw ex;
-        }
+    @Test
+    public void containsCorrectVersionNumber() throws Exception {
+        MatcherAssert.assertThat(
+            Version.CURRENT.projectVersion(),
+            Matchers.not(
+                Matchers.equalTo("${projectVersion}")
+            )
+        );
+    }
+
+    /**
+     * Version.CURRENT can contain actual build number and not a
+     * "${buildNumber}" placeholder.
+     * @throws Exception If fails
+     */
+    @Test
+    public void containsCorrectBuildNumber() throws Exception {
+        MatcherAssert.assertThat(
+            Version.CURRENT.buildNumber(),
+            Matchers.not(
+                Matchers.equalTo("${buildNumber}")
+            )
+        );
     }
 }

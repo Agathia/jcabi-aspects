@@ -62,8 +62,9 @@ public final class Repeater {
      * @param point Joint point
      * @return The result of call
      * @throws Throwable If something goes wrong inside
-     * @checkstyle IllegalThrows (5 lines)
+     * @checkstyle IllegalThrows (6 lines)
      * @checkstyle LineLength (4 lines)
+     * @checkstyle ExecutableStatementCountCheck (100 lines)
      */
     @Around("execution(* * (..)) && @annotation(com.jcabi.aspects.RetryOnFailure)")
     @SuppressWarnings("PMD.AvoidCatchingThrowable")
@@ -75,6 +76,7 @@ public final class Repeater {
         int attempt = 0;
         final long begin = System.nanoTime();
         final Class<? extends Throwable>[] types = rof.types();
+        final ImprovedJoinPoint joinpoint = new ImprovedJoinPoint(point);
         while (true) {
             final long start = System.nanoTime();
             try {
@@ -84,13 +86,16 @@ public final class Repeater {
                 throw ex;
             // @checkstyle IllegalCatch (1 line)
             } catch (final Throwable ex) {
-                if (!this.isExceptionToBeRetried(ex.getClass(), types)) {
+                if (Repeater.matches(ex.getClass(), rof.ignore())) {
+                    throw ex;
+                }
+                if (!Repeater.matches(ex.getClass(), types)) {
                     throw ex;
                 }
                 ++attempt;
                 if (rof.verbose()) {
                     Logger.warn(
-                        JoinPointUtils.targetize(point),
+                        joinpoint.targetize(),
                         // @checkstyle LineLength (1 line)
                         "#%s(): attempt #%d of %d failed in %[nano]s (%[nano]s waiting already) with %[exception]s",
                         method.getName(),
@@ -99,7 +104,7 @@ public final class Repeater {
                     );
                 } else {
                     Logger.warn(
-                        JoinPointUtils.targetize(point),
+                           joinpoint.targetize(),
                         // @checkstyle LineLength (1 line)
                         "#%s(): attempt #%d/%d failed with %[type]s in %[nano]s (%[nano]s in total): %s",
                         method.getName(),
@@ -150,23 +155,23 @@ public final class Repeater {
     }
 
     /**
-     * Checks if the exception thrown is specified to be retried.
+     * Checks if the exception thrown matches the list.
      * @param thrown The thrown exception class
-     * @param types The exceptions specified to be retried
-     * @return True if the method call is to be retried
+     * @param types The exceptions to match
+     * @return TRUE if matches
      */
-    private boolean isExceptionToBeRetried(
+    private static boolean matches(
         final Class<? extends Throwable> thrown,
-        final Class<? extends Throwable>[] types
+        final Class<? extends Throwable>... types
     ) {
-        boolean result = false;
+        boolean matches = false;
         for (final Class<? extends Throwable> type : types) {
             if (type.isAssignableFrom(thrown)) {
-                result = true;
+                matches = true;
                 break;
             }
         }
-        return result;
+        return matches;
     }
 
 }
